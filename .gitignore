@@ -1,0 +1,10 @@
+*.exe
+*.out
+*.o
+*.obj
+/build/
+/bin/
+.vscode/
+*.log
+data/chats/*
+!data/chats/.keep
