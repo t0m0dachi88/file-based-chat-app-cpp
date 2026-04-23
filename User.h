@@ -12,7 +12,6 @@ class User {
 protected:
     std::string username;
     std::string password;
-    std::string email;
     bool isOnline;
     std::set<std::string> blockedUsers; // STL set for blocked users
     int loginAttempts;
@@ -20,7 +19,7 @@ protected:
 
 public:
     // Constructor
-    User(std::string u, std::string p, std::string e);
+    User(std::string u, std::string p);
 
     // Pure virtual destructor for polymorphism
     virtual ~User() = 0;
@@ -31,7 +30,6 @@ public:
 
     // Getters and setters
     std::string getUsername() const { return username; }
-    std::string getEmail() const { return email; }
     bool getIsOnline() const { return isOnline; }
     std::string getPassword() const { return password; }
 

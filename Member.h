@@ -6,7 +6,7 @@
 class Member : public User {
 public:
     // Constructor
-    Member(std::string u, std::string p, std::string e);
+    Member(std::string u, std::string p);
 
     // Destructor
     ~Member();

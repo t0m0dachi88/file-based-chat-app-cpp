@@ -6,7 +6,7 @@
 class Admin : public User {
 public:
     // Constructor
-    Admin(std::string u, std::string p, std::string e);
+    Admin(std::string u, std::string p);
 
     // Destructor
     ~Admin();

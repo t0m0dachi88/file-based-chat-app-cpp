@@ -15,7 +15,7 @@ FileManager::~FileManager() {}
 void FileManager::saveUsers(std::vector<User*> users) {
     std::ofstream file(usersFile);
     for (auto u : users) {
-        file << getUserType(u) << "," << u->getUsername() << "," << u->getPassword() << "," << u->getEmail() << std::endl;
+        file << getUserType(u) << "," << u->getUsername() << "," << u->getPassword() << std::endl;
     }
     file.close();
 }
@@ -27,15 +27,14 @@ std::vector<User*> FileManager::loadUsers() {
     std::string line;
     while (std::getline(file, line)) {
         std::stringstream ss(line);
-        std::string type, username, password, email;
+        std::string type, username, password;
         std::getline(ss, type, ',');
         std::getline(ss, username, ',');
         std::getline(ss, password, ',');
-        std::getline(ss, email, ',');
         if (type == "Admin") {
-            users.push_back(new Admin(username, password, email));
+            users.push_back(new Admin(username, password));
         } else if (type == "Member") {
-            users.push_back(new Member(username, password, email));
+            users.push_back(new Member(username, password));
         }
     }
     file.close();
@@ -74,8 +73,8 @@ PrivateChat* FileManager::loadPrivateChat(std::string id, std::vector<User*>& us
         if (u->getUsername() == u1_str) user1 = u;
         if (u->getUsername() == u2_str) user2 = u;
     }
-    if (!user1) user1 = new Member(u1_str, "pass", "email");
-    if (!user2) user2 = new Member(u2_str, "pass", "email");
+    if (!user1) user1 = new Member(u1_str, "pass");
+    if (!user2) user2 = new Member(u2_str, "pass");
     PrivateChat* chat = new PrivateChat(user1, user2);
     // Load messages
     while (std::getline(file, line)) {
@@ -106,27 +105,6 @@ bool FileManager::privateChatExists(std::string id) {
     std::string filename = privateChatsDir + id + ".txt";
     std::ifstream file(filename);
     return file.good();
-}
-
-// Save chat room
-void FileManager::saveChatRoom(ChatRoom* room) {
-    std::string filename = roomChatsDir + room->getName() + ".txt";
-    std::ofstream file(filename);
-    file << room->getAdmin()->getUsername() << std::endl;
-    // Members and messages
-    file.close();
-}
-
-// Load chat room
-ChatRoom* FileManager::loadChatRoom(std::string name) {
-    std::string filename = roomChatsDir + name + ".txt";
-    std::ifstream file(filename);
-    std::string adminName;
-    std::getline(file, adminName);
-    Admin* admin = new Admin(adminName, "pass", "email");
-    ChatRoom* room = new ChatRoom(name, admin);
-    file.close();
-    return room;
 }
 
 // Get user type

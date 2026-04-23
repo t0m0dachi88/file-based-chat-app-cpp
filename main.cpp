@@ -87,21 +87,19 @@ int main() {
             clearInput();
 
             if (choice == 1) { // Register
-                string username, password, email, type;
+                string username, password, type;
                 cout << "Enter username: ";
                 getline(cin, username);
                 cout << "Enter password: ";
                 getline(cin, password);
-                cout << "Enter email: ";
-                getline(cin, email);
                 cout << "Enter type (admin/member): ";
                 getline(cin, type);
 
                 User* newUser = nullptr;
                 if (type == "admin") {
-                    newUser = new Admin(username, password, email);
+                    newUser = new Admin(username, password);
                 } else {
-                    newUser = new Member(username, password, email);
+                    newUser = new Member(username, password);
                 }
                 users.push_back(newUser);
                 fm.saveUsers(users);

@@ -1,14 +1,14 @@
 #include "Member.h"
 
 // Constructor
-Member::Member(std::string u, std::string p, std::string e) : User(u, p, e) {}
+Member::Member(std::string u, std::string p) : User(u, p) {}
 
 // Destructor
 Member::~Member() {}
 
 // Override displayProfile
 void Member::displayProfile() {
-    std::cout << "Member Profile: " << username << " (" << email << ")" << std::endl;
+    std::cout << "Member Profile: " << username << std::endl;
 }
 
 // Override canModerate

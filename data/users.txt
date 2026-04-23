@@ -1,6 +1,7 @@
-Admin,admin,pass,admin@chat.com
-Member,irfan,irfan123,irfan@gmail.com
-Member,noor,noor123,noor@gmail.com
-Member,sadik,sadik123,eeee
-Member,mawa,mawa123,eeee
-Member,jannat,jannat123,jjjjj
+Admin,admin,pass
+Member,irfan,irfan123
+Member,noor,noor123
+Member,sadik,sadik123
+Member,mawa,mawa123
+Member,jannat,jannat123
+Member,sss,sss

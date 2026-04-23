@@ -1,14 +1,14 @@
 #include "Admin.h"
 
 // Constructor
-Admin::Admin(std::string u, std::string p, std::string e) : User(u, p, e) {}
+Admin::Admin(std::string u, std::string p) : User(u, p) {}
 
 // Destructor
 Admin::~Admin() {}
 
 // Override displayProfile
 void Admin::displayProfile() {
-    std::cout << "Admin Profile: " << username << " (" << email << ")" << std::endl;
+    std::cout << "Admin Profile: " << username << std::endl;
 }
 
 // Override canModerate

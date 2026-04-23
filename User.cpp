@@ -2,8 +2,8 @@
 #include <algorithm>
 
 // Constructor
-User::User(std::string u, std::string p, std::string e)
-    : username(u), password(p), email(e), isOnline(false), loginAttempts(0) {}
+User::User(std::string u, std::string p)
+    : username(u), password(p), isOnline(false), loginAttempts(0) {}
 
 // Pure virtual destructor
 User::~User() {}
@@ -42,6 +42,6 @@ bool User::isBlocked(std::string u) const {
 
 // Operator overloading
 std::ostream& operator<<(std::ostream& os, const User& u) {
-    os << "Username: " << u.username << ", Email: " << u.email << ", Online: " << (u.isOnline ? "Yes" : "No");
+    os << "Username: " << u.username << ", Online: " << (u.isOnline ? "Yes" : "No");
     return os;
 }
