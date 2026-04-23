@@ -5,7 +5,6 @@
 #include "TextMessage.h"
 #include "EncryptedMessage.h"
 #include "PrivateChat.h"
-#include "ChatRoom.h"
 #include "FileManager.h"
 #include "EncryptionManager.h"
 #include "SearchEngine.h"
@@ -37,11 +36,10 @@ void displayMainMenu() {
 void displayDashboard() {
     cout << "\n===== DASHBOARD =====" << endl;
     cout << "1. Private Chat" << endl;
-    cout << "2. Group Chat" << endl;
-    cout << "3. Search Messages" << endl;
-    cout << "4. Notifications" << endl;
-    cout << "5. Profile" << endl;
-    cout << "6. Logout" << endl;
+    cout << "2. Search Messages" << endl;
+    cout << "3. Notifications" << endl;
+    cout << "4. Profile" << endl;
+    cout << "5. Logout" << endl;
     cout << "Choose an option: ";
 }
 
@@ -53,23 +51,11 @@ void displayPrivateChatMenu() {
     cout << "Choose an option: ";
 }
 
-void displayGroupChatMenu() {
-    cout << "\n===== GROUP CHAT =====" << endl;
-    cout << "1. Create Room" << endl;
-    cout << "2. Join Room" << endl;
-    cout << "3. Send Message" << endl;
-    cout << "4. View Room Chat" << endl;
-    cout << "5. Back" << endl;
-    cout << "Choose an option: ";
-}
-
 void displayAdminMenu() {
     cout << "\n===== ADMIN MENU =====" << endl;
-    cout << "1. Create Room" << endl;
-    cout << "2. Delete Room" << endl;
-    cout << "3. Remove User" << endl;
-    cout << "4. View All Users" << endl;
-    cout << "5. Logout" << endl;
+    cout << "1. Remove User" << endl;
+    cout << "2. View All Users" << endl;
+    cout << "3. Logout" << endl;
     cout << "Choose an option: ";
 }
 
@@ -81,7 +67,6 @@ int main() {
 
     vector<User*> users;
     map<string, PrivateChat*> privateChats;
-    map<string, ChatRoom*> chatRooms;
     FileManager fm;
     NotificationManager nm;
     SearchEngine se;
@@ -91,24 +76,6 @@ int main() {
 
     // Load existing users
     users = fm.loadUsers();
-
-    // Load existing rooms (simplified, assume some exist or create)
-    // For demo, create a default room if none
-    if (chatRooms.empty()) {
-        Admin* defaultAdmin = nullptr;
-        for (auto u : users) {
-            if (dynamic_cast<Admin*>(u)) {
-                defaultAdmin = dynamic_cast<Admin*>(u);
-                break;
-            }
-        }
-        if (!defaultAdmin) {
-            defaultAdmin = new Admin("admin", "pass", "admin@chat.com");
-            users.push_back(defaultAdmin);
-        }
-        ChatRoom* defaultRoom = new ChatRoom("General", defaultAdmin);
-        chatRooms["General"] = defaultRoom;
-    }
 
     logger.log("Application started");
 
@@ -178,30 +145,7 @@ int main() {
                 cin >> choice;
                 clearInput();
 
-                if (choice == 1) { // Create Room
-                    string roomName;
-                    cout << "Enter room name: ";
-                    getline(cin, roomName);
-                    ChatRoom* newRoom = new ChatRoom(roomName, dynamic_cast<Admin*>(currentUser));
-                    chatRooms[roomName] = newRoom;
-                    fm.saveChatRoom(newRoom);
-                    logger.log("Room created: " + roomName);
-                    cout << "Room created!" << endl;
-
-                } else if (choice == 2) { // Delete Room
-                    string roomName;
-                    cout << "Enter room name to delete: ";
-                    getline(cin, roomName);
-                    if (chatRooms.find(roomName) != chatRooms.end()) {
-                        delete chatRooms[roomName];
-                        chatRooms.erase(roomName);
-                        logger.log("Room deleted: " + roomName);
-                        cout << "Room deleted!" << endl;
-                    } else {
-                        cout << "Room not found!" << endl;
-                    }
-
-                } else if (choice == 3) { // Remove User
+                if (choice == 1) { // Remove User
                     string username;
                     cout << "Enter username to remove: ";
                     getline(cin, username);
@@ -216,13 +160,13 @@ int main() {
                         cout << "User not found!" << endl;
                     }
 
-                } else if (choice == 4) { // View All Users
+                } else if (choice == 2) { // View All Users
                     cout << "All Users:" << endl;
                     for (auto u : users) {
                         cout << *u << endl;
                     }
 
-                } else if (choice == 5) { // Logout
+                } else if (choice == 3) { // Logout
                     currentUser->logout();
                     currentUser = nullptr;
                     logger.log("Admin logged out");
@@ -292,62 +236,15 @@ int main() {
                         }
                     }
 
-                } else if (choice == 2) { // Group Chat
-                    string roomName;
-                    cout << "Enter room name: ";
-                    getline(cin, roomName);
-
-                    if (chatRooms.find(roomName) == chatRooms.end()) {
-                        cout << "Room not found!" << endl;
-                        continue;
-                    }
-                    ChatRoom* room = chatRooms[roomName];
-
-                    while (true) {
-                        displayGroupChatMenu();
-                        int gchoice;
-                        cin >> gchoice;
-                        clearInput();
-
-                        if (gchoice == 1) { // Create Room - but only admin
-                            cout << "Only admin can create rooms!" << endl;
-
-                        } else if (gchoice == 2) { // Join Room
-                            room->addMember(currentUser);
-                            cout << "Joined room!" << endl;
-
-                        } else if (gchoice == 3) { // Send Message
-                            string content;
-                            cout << "Enter message: ";
-                            getline(cin, content);
-                            Message* msg = new TextMessage(currentUser->getUsername(), content);
-                            room->sendMessage(msg);
-                            fm.saveChatRoom(room);
-                            logger.log("Message sent in group chat");
-
-                        } else if (gchoice == 4) { // View Room Chat
-                            room->viewHistory();
-
-                        } else if (gchoice == 5) { // Back
-                            break;
-                        } else {
-                            cout << "Invalid choice!" << endl;
-                        }
-                    }
-
-                } else if (choice == 3) { // Search Messages
+                } else if (choice == 2) { // Search Messages
                     string keyword;
                     cout << "Enter keyword to search: ";
                     getline(cin, keyword);
 
-                    // Search in all private chats and rooms
+                    // Search in all private chats
                     vector<Message*> results;
                     for (auto& pc : privateChats) {
                         auto res = se.searchByKeyword(pc.second->getMessages(), keyword);
-                        results.insert(results.end(), res.begin(), res.end());
-                    }
-                    for (auto& cr : chatRooms) {
-                        auto res = se.searchByKeyword(cr.second->getMessages(), keyword);
                         results.insert(results.end(), res.begin(), res.end());
                     }
 
@@ -356,13 +253,13 @@ int main() {
                         msg->display();
                     }
 
-                } else if (choice == 4) { // Notifications
+                } else if (choice == 3) { // Notifications
                     nm.displayNotifications();
 
-                } else if (choice == 5) { // Profile
+                } else if (choice == 4) { // Profile
                     currentUser->displayProfile();
 
-                } else if (choice == 6) { // Logout
+                } else if (choice == 5) { // Logout
                     currentUser->logout();
                     currentUser = nullptr;
                     logger.log("User logged out");
@@ -380,9 +277,6 @@ int main() {
     }
     for (auto pc : privateChats) {
         delete pc.second;
-    }
-    for (auto cr : chatRooms) {
-        delete cr.second;
     }
 
     logger.log("Application exited");
