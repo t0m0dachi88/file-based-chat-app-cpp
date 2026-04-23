@@ -275,19 +275,9 @@ int main() {
 
                         if (pchoice == 1) { // Send Message
                             string content;
-                            char encrypt;
                             cout << "Enter message: ";
                             getline(cin, content);
-                            cout << "Encrypt? (y/n): ";
-                            cin >> encrypt;
-                            clearInput();
-
-                            Message* msg = nullptr;
-                            if (encrypt == 'y') {
-                                msg = new EncryptedMessage(currentUser->getUsername(), content);
-                            } else {
-                                msg = new TextMessage(currentUser->getUsername(), content);
-                            }
+                            Message* msg = new EncryptedMessage(currentUser->getUsername(), content);
                             chat->sendMessage(msg);
                             fm.savePrivateChat(chat);
                             logger.log("Message sent in private chat");
