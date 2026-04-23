@@ -1,0 +1,3 @@
+Admin,admin,pass,admin@chat.com
+Member,irfan,irfan123,irfan@gmail.com
+Member,noor,noor123,noor@gmail.com
