@@ -280,19 +280,12 @@ int main() {
 
                 } else if (choice == 2) { // Search Messages
                     // Pre-load all relevant chats before searching
-                    for (auto u : users) {
-                        if (u == currentUser) continue;
-                        string u1 = currentUser->getUsername();
-                        string u2 = u->getUsername();
-                        if (u1 > u2) swap(u1, u2);
-                        string chatId = u1 + "_" + u2;
-
+                    vector<string> chatIds = fm.getAllChatIdsForUser(currentUser->getUsername());
+                    for (const string& chatId : chatIds) {
                         if (privateChats.find(chatId) == privateChats.end()) {
-                            if (fm.privateChatExists(chatId)) {
-                                PrivateChat* loadedChat = fm.loadPrivateChat(chatId);
-                                if (loadedChat) {
-                                    privateChats[chatId] = loadedChat;
-                                }
+                            PrivateChat* loadedChat = fm.loadPrivateChat(chatId);
+                            if (loadedChat) {
+                                privateChats[chatId] = loadedChat;
                             }
                         }
                     }

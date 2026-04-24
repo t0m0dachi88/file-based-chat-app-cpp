@@ -1,3 +1,0 @@
-mawa,noor
-Encrypted,mawa,hello,Thu Apr 23 20:58:37 2026,1
-Encrypted,noor,hola,Thu Apr 23 20:59:22 2026,0

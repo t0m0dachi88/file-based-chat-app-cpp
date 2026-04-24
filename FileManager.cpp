@@ -7,6 +7,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <cstdio>
+#include <filesystem>
 
 // Constructor
 FileManager::FileManager() {}
@@ -72,7 +73,7 @@ void FileManager::savePrivateChat(PrivateChat* chat) {
         for (auto msg : chat->getMessages()) {
             std::string contentToSave = msg->getContent();
             if (msg->getType() == "Encrypted") {
-                contentToSave = em.decrypt(contentToSave, 3);
+                contentToSave = em.encrypt(contentToSave, 3); // Fix: Encrypt plaintext to save securely
             }
             file << msg->getType() << "," << msg->getSender() << "," << contentToSave << "," << msg->getTimestamp() << "," << (msg->getIsRead() ? "1" : "0") << std::endl;
         }
@@ -114,7 +115,9 @@ PrivateChat* FileManager::loadPrivateChat(std::string id) {
             if (type == "Text") {
                 msg = new TextMessage(sender, content);
             } else if (type == "Encrypted") {
-                msg = new EncryptedMessage(sender, content, 3);
+                EncryptionManager em;
+                std::string plaintext = em.decrypt(content, 3); // Fix: Decrypt file content so constructor can re-encrypt it properly
+                msg = new EncryptedMessage(sender, plaintext, 3);
             }
             if (msg) {
                 msg->setIsRead(isReadStr == "1");
@@ -141,6 +144,28 @@ bool FileManager::privateChatExists(std::string id) {
 void FileManager::deletePrivateChatFile(std::string id) {
     std::string filename = privateChatsDir + id + ".txt";
     std::remove(filename.c_str());
+}
+
+// Get all chat IDs for user
+std::vector<std::string> FileManager::getAllChatIdsForUser(std::string username) {
+    std::vector<std::string> ids;
+    if (!std::filesystem::exists(privateChatsDir)) return ids;
+    
+    for (const auto& entry : std::filesystem::directory_iterator(privateChatsDir)) {
+        if (entry.is_regular_file()) {
+            std::string filename = entry.path().filename().string();
+            if (filename.find(".txt") != std::string::npos) {
+                std::string id = filename.substr(0, filename.find(".txt"));
+                std::string search1 = username + "_";
+                std::string search2 = "_" + username;
+                // Check if id starts with search1 or ends with search2
+                if (id.find(search1) == 0 || (id.length() >= search2.length() && id.compare(id.length() - search2.length(), search2.length(), search2) == 0)) {
+                    ids.push_back(id);
+                }
+            }
+        }
+    }
+    return ids;
 }
 
 // Get user type

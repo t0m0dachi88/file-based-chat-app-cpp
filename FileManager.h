@@ -28,6 +28,7 @@ public:
     PrivateChat* loadPrivateChat(std::string id); // FIX 3: No dummy users created
     bool privateChatExists(std::string id);
     void deletePrivateChatFile(std::string id);
+    std::vector<std::string> getAllChatIdsForUser(std::string username);
 
     // Helper
     std::string getUserType(User* u);
