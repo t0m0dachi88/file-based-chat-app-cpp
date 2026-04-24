@@ -17,10 +17,11 @@ public:
     // Override virtual methods
     void display() override;
     std::string getType() override;
+    std::string getContent() const override;
 
     // Encryption methods
-    std::string encrypt(std::string text);
-    std::string decrypt(std::string text);
+    std::string encrypt(std::string text) const;
+    std::string decrypt(std::string text) const;
 };
 
 #endif

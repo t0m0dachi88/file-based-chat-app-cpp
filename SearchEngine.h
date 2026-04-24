@@ -13,10 +13,10 @@ public:
     // Destructor
     ~SearchEngine();
 
-    // Methods
-    std::vector<Message*> searchByKeyword(std::vector<Message*> messages, std::string keyword);
-    std::vector<Message*> searchBySender(std::vector<Message*> messages, std::string sender);
-    std::vector<Message*> searchByDate(std::vector<Message*> messages, std::string date);
+    // Overloaded search methods (FIX 6: Compile-time polymorphism)
+    // FIX 4: Pass-by-value inefficiency fixed (using const reference)
+    std::vector<Message*> search(const std::vector<Message*>& messages, std::string keyword);
+    std::vector<Message*> search(const std::vector<Message*>& messages, std::string keyword, std::string sender);
 };
 
 #endif

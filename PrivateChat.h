@@ -1,23 +1,20 @@
 #ifndef PRIVATECHAT_H
 #define PRIVATECHAT_H
 
-#include "User.h"
 #include "Message.h"
 #include <vector>
-#include <queue>
 #include <string>
 
 class PrivateChat {
 private:
     std::string id;
-    User* user1;
-    User* user2;
+    std::string user1; // FIX 2: Dangling pointer fix, use string
+    std::string user2;
     std::vector<Message*> messages; // STL vector
-    std::queue<std::string> notifications; // STL queue for unread notifications
 
 public:
     // Constructor
-    PrivateChat(User* u1, User* u2);
+    PrivateChat(std::string u1, std::string u2);
 
     // Destructor
     ~PrivateChat();
@@ -25,15 +22,14 @@ public:
     // Methods
     void sendMessage(Message* msg);
     void viewHistory();
-    std::vector<Message*> searchMessages(std::string keyword);
     void markAsRead();
-    int getUnreadCount();
+    int getUnreadCount() const;
 
     // Getters
     std::string getId() const { return id; }
-    User* getUser1() const { return user1; }
-    User* getUser2() const { return user2; }
-    std::vector<Message*> getMessages() const { return messages; }
+    std::string getUser1() const { return user1; }
+    std::string getUser2() const { return user2; }
+    const std::vector<Message*>& getMessages() const { return messages; } // Const reference
 };
 
 #endif

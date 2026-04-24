@@ -19,8 +19,13 @@ std::string EncryptedMessage::getType() {
     return "Encrypted";
 }
 
+// Override getContent
+std::string EncryptedMessage::getContent() const {
+    return decrypt(content);
+}
+
 // Simple Caesar cipher encrypt
-std::string EncryptedMessage::encrypt(std::string text) {
+std::string EncryptedMessage::encrypt(std::string text) const {
     std::string result = text;
     for (char& c : result) {
         if (isalpha(c)) {
@@ -32,7 +37,7 @@ std::string EncryptedMessage::encrypt(std::string text) {
 }
 
 // Decrypt
-std::string EncryptedMessage::decrypt(std::string text) {
+std::string EncryptedMessage::decrypt(std::string text) const {
     std::string result = text;
     for (char& c : result) {
         if (isalpha(c)) {

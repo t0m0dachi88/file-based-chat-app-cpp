@@ -4,6 +4,9 @@
 #include "TextMessage.h"
 #include "EncryptedMessage.h"
 #include <sstream>
+#include <iostream>
+#include <stdexcept>
+#include <cstdio>
 
 // Constructor
 FileManager::FileManager() {}
@@ -12,92 +15,119 @@ FileManager::FileManager() {}
 FileManager::~FileManager() {}
 
 // Save users
-void FileManager::saveUsers(std::vector<User*> users) {
-    std::ofstream file(usersFile);
-    for (auto u : users) {
-        file << getUserType(u) << "," << u->getUsername() << "," << u->getPassword() << std::endl;
+void FileManager::saveUsers(const std::vector<User*>& users) {
+    try {
+        std::ofstream file(usersFile);
+        if (!file.is_open()) {
+            throw std::runtime_error("Could not open users file for writing.");
+        }
+        for (auto u : users) {
+            file << getUserType(u) << "," << u->getUsername() << "," << u->getPassword() << std::endl;
+        }
+        file.close();
+    } catch (const std::exception& e) { // FIX 7: Exception handling
+        std::cerr << "File Error: " << e.what() << std::endl;
     }
-    file.close();
 }
 
 // Load users
 std::vector<User*> FileManager::loadUsers() {
     std::vector<User*> users;
-    std::ifstream file(usersFile);
-    std::string line;
-    while (std::getline(file, line)) {
-        std::stringstream ss(line);
-        std::string type, username, password;
-        std::getline(ss, type, ',');
-        std::getline(ss, username, ',');
-        std::getline(ss, password, ',');
-        if (type == "Admin") {
-            users.push_back(new Admin(username, password));
-        } else if (type == "Member") {
-            users.push_back(new Member(username, password));
+    try {
+        std::ifstream file(usersFile);
+        if (!file.is_open()) {
+            // It's okay if file doesn't exist on first run
+            return users;
         }
+        std::string line;
+        while (std::getline(file, line)) {
+            std::stringstream ss(line);
+            std::string type, username, password;
+            std::getline(ss, type, ',');
+            std::getline(ss, username, ',');
+            std::getline(ss, password, ',');
+            if (type == "Admin") {
+                users.push_back(new Admin(username, password));
+            } else if (type == "Member") {
+                users.push_back(new Member(username, password));
+            }
+        }
+        file.close();
+    } catch (const std::exception& e) {
+        std::cerr << "File Error: " << e.what() << std::endl;
     }
-    file.close();
     return users;
 }
 
 // Save private chat
 void FileManager::savePrivateChat(PrivateChat* chat) {
-    std::string filename = privateChatsDir + chat->getId() + ".txt";
-    std::ofstream file(filename);
-    file << chat->getUser1()->getUsername() << "," << chat->getUser2()->getUsername() << std::endl;
-    EncryptionManager em;
-    for (auto msg : chat->getMessages()) {
-        std::string contentToSave = msg->getContent();
-        if (msg->getType() == "Encrypted") {
-            contentToSave = em.decrypt(contentToSave, 3);
+    try {
+        std::string filename = privateChatsDir + chat->getId() + ".txt";
+        std::ofstream file(filename);
+        if (!file.is_open()) {
+            throw std::runtime_error("Could not open private chat file for writing.");
         }
-        file << msg->getType() << "," << msg->getSender() << "," << contentToSave << "," << msg->getTimestamp() << "," << (msg->getIsRead() ? "1" : "0") << std::endl;
+        file << chat->getUser1() << "," << chat->getUser2() << std::endl;
+        EncryptionManager em;
+        for (auto msg : chat->getMessages()) {
+            std::string contentToSave = msg->getContent();
+            if (msg->getType() == "Encrypted") {
+                contentToSave = em.decrypt(contentToSave, 3);
+            }
+            file << msg->getType() << "," << msg->getSender() << "," << contentToSave << "," << msg->getTimestamp() << "," << (msg->getIsRead() ? "1" : "0") << std::endl;
+        }
+        file.close();
+    } catch (const std::exception& e) {
+        std::cerr << "File Error: " << e.what() << std::endl;
     }
-    file.close();
 }
 
 // Load private chat
-PrivateChat* FileManager::loadPrivateChat(std::string id, std::vector<User*>& users) {
-    std::string filename = privateChatsDir + id + ".txt";
-    std::ifstream file(filename);
-    std::string line;
-    std::getline(file, line);
-    std::stringstream ss(line);
-    std::string u1_str, u2_str;
-    std::getline(ss, u1_str, ',');
-    std::getline(ss, u2_str, ',');
-    User* user1 = nullptr;
-    User* user2 = nullptr;
-    for (auto u : users) {
-        if (u->getUsername() == u1_str) user1 = u;
-        if (u->getUsername() == u2_str) user2 = u;
-    }
-    if (!user1) user1 = new Member(u1_str, "pass");
-    if (!user2) user2 = new Member(u2_str, "pass");
-    PrivateChat* chat = new PrivateChat(user1, user2);
-    // Load messages
-    while (std::getline(file, line)) {
-        std::stringstream ss2(line);
-        std::string type, sender, content, timestamp, isReadStr;
-        std::getline(ss2, type, ',');
-        std::getline(ss2, sender, ',');
-        std::getline(ss2, content, ',');
-        std::getline(ss2, timestamp, ',');
-        std::getline(ss2, isReadStr, ',');
-        Message* msg = nullptr;
-        if (type == "Text") {
-            msg = new TextMessage(sender, content);
-        } else if (type == "Encrypted") {
-            msg = new EncryptedMessage(sender, content, 3);
+PrivateChat* FileManager::loadPrivateChat(std::string id) {
+    try {
+        std::string filename = privateChatsDir + id + ".txt";
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            throw std::runtime_error("Could not open private chat file for reading.");
         }
-        if (msg) {
-            msg->setIsRead(isReadStr == "1");
-            chat->sendMessage(msg); // add to messages
+        std::string line;
+        if (!std::getline(file, line)) {
+             throw std::runtime_error("Private chat file is empty.");
         }
+        std::stringstream ss(line);
+        std::string u1_str, u2_str;
+        std::getline(ss, u1_str, ',');
+        std::getline(ss, u2_str, ',');
+        
+        PrivateChat* chat = new PrivateChat(u1_str, u2_str);
+        
+        // Load messages
+        while (std::getline(file, line)) {
+            std::stringstream ss2(line);
+            std::string type, sender, content, timestamp, isReadStr;
+            std::getline(ss2, type, ',');
+            std::getline(ss2, sender, ',');
+            std::getline(ss2, content, ',');
+            std::getline(ss2, timestamp, ',');
+            std::getline(ss2, isReadStr, ',');
+            Message* msg = nullptr;
+            if (type == "Text") {
+                msg = new TextMessage(sender, content);
+            } else if (type == "Encrypted") {
+                msg = new EncryptedMessage(sender, content, 3);
+            }
+            if (msg) {
+                msg->setIsRead(isReadStr == "1");
+                msg->setTimestamp(timestamp); // FIX 1: Set the proper timestamp loaded from file
+                chat->sendMessage(msg); // add to messages
+            }
+        }
+        file.close();
+        return chat;
+    } catch (const std::exception& e) {
+        std::cerr << "File Error: " << e.what() << std::endl;
+        return nullptr;
     }
-    file.close();
-    return chat;
 }
 
 // Check if private chat exists
@@ -105,6 +135,12 @@ bool FileManager::privateChatExists(std::string id) {
     std::string filename = privateChatsDir + id + ".txt";
     std::ifstream file(filename);
     return file.good();
+}
+
+// Delete private chat file
+void FileManager::deletePrivateChatFile(std::string id) {
+    std::string filename = privateChatsDir + id + ".txt";
+    std::remove(filename.c_str());
 }
 
 // Get user type

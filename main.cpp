@@ -8,7 +8,6 @@
 #include "FileManager.h"
 #include "EncryptionManager.h"
 #include "SearchEngine.h"
-#include "NotificationManager.h"
 #include "Logger.h"
 #include <vector>
 #include <map>
@@ -37,9 +36,8 @@ void displayDashboard() {
     cout << "\n===== DASHBOARD =====" << endl;
     cout << "1. Private Chat" << endl;
     cout << "2. Search Messages" << endl;
-    cout << "3. Notifications" << endl;
-    cout << "4. Profile" << endl;
-    cout << "5. Logout" << endl;
+    cout << "3. Profile" << endl;
+    cout << "4. Logout" << endl;
     cout << "Choose an option: ";
 }
 
@@ -62,13 +60,11 @@ void displayAdminMenu() {
 int main() {
     // Create necessary directories
     system("mkdir data\\private_chats 2>nul");
-    system("mkdir data\\room_chats 2>nul");
     system("mkdir data\\logs 2>nul");
 
     vector<User*> users;
     map<string, PrivateChat*> privateChats;
     FileManager fm;
-    NotificationManager nm;
     SearchEngine se;
     EncryptionManager em;
     Logger<string> logger("app");
@@ -83,7 +79,11 @@ int main() {
         if (!currentUser) {
             displayMainMenu();
             int choice;
-            cin >> choice;
+            if (!(cin >> choice)) {
+                clearInput();
+                cout << "Invalid input! Please enter a number." << endl;
+                continue;
+            }
             clearInput();
 
             if (choice == 1) { // Register
@@ -94,6 +94,11 @@ int main() {
                 getline(cin, password);
                 cout << "Enter type (admin/member): ";
                 getline(cin, type);
+
+                if (username.empty() || password.empty()) {
+                    cout << "Username and password cannot be empty." << endl;
+                    continue;
+                }
 
                 User* newUser = nullptr;
                 if (type == "admin") {
@@ -117,7 +122,8 @@ int main() {
                     if (u->getUsername() == username) {
                         if (u->login(password)) {
                             currentUser = u;
-                            logger.log("User logged in: " + username);
+                            // Type conversion demonstrated: operator string()
+                            logger.log("User logged in: " + string(*currentUser)); 
                             cout << "Login successful!" << endl;
                             found = true;
                         } else {
@@ -140,7 +146,11 @@ int main() {
             if (currentUser->canModerate()) {
                 displayAdminMenu();
                 int choice;
-                cin >> choice;
+                if (!(cin >> choice)) {
+                    clearInput();
+                    cout << "Invalid input! Please enter a number." << endl;
+                    continue;
+                }
                 clearInput();
 
                 if (choice == 1) { // Remove User
@@ -149,9 +159,23 @@ int main() {
                     getline(cin, username);
                     auto it = find_if(users.begin(), users.end(), [&](User* u){ return u->getUsername() == username; });
                     if (it != users.end()) {
+                        string targetUser = (*it)->getUsername();
                         delete *it;
                         users.erase(it);
                         fm.saveUsers(users);
+                        
+                        // FIX 2: Prevent dangling pointers/memory issues, clean up chats related to removed user
+                        auto chatIt = privateChats.begin();
+                        while (chatIt != privateChats.end()) {
+                            if (chatIt->second->getUser1() == targetUser || chatIt->second->getUser2() == targetUser) {
+                                fm.deletePrivateChatFile(chatIt->second->getId());
+                                delete chatIt->second;
+                                chatIt = privateChats.erase(chatIt);
+                            } else {
+                                ++chatIt;
+                            }
+                        }
+
                         logger.log("User removed: " + username);
                         cout << "User removed!" << endl;
                     } else {
@@ -175,7 +199,11 @@ int main() {
             } else {
                 displayDashboard();
                 int choice;
-                cin >> choice;
+                if (!(cin >> choice)) {
+                    clearInput();
+                    cout << "Invalid input! Please enter a number." << endl;
+                    continue;
+                }
                 clearInput();
 
                 if (choice == 1) { // Private Chat
@@ -202,9 +230,14 @@ int main() {
 
                     if (privateChats.find(chatId) == privateChats.end()) {
                         if (fm.privateChatExists(chatId)) {
-                            privateChats[chatId] = fm.loadPrivateChat(chatId, users);
+                            PrivateChat* loadedChat = fm.loadPrivateChat(chatId);
+                            if (loadedChat) {
+                                privateChats[chatId] = loadedChat;
+                            } else {
+                                privateChats[chatId] = new PrivateChat(currentUser->getUsername(), recUser->getUsername());
+                            }
                         } else {
-                            privateChats[chatId] = new PrivateChat(currentUser, recUser);
+                            privateChats[chatId] = new PrivateChat(currentUser->getUsername(), recUser->getUsername());
                         }
                     }
                     PrivateChat* chat = privateChats[chatId];
@@ -212,17 +245,28 @@ int main() {
                     while (true) {
                         displayPrivateChatMenu();
                         int pchoice;
-                        cin >> pchoice;
+                        if (!(cin >> pchoice)) {
+                            clearInput();
+                            cout << "Invalid input! Please enter a number." << endl;
+                            continue;
+                        }
                         clearInput();
 
                         if (pchoice == 1) { // Send Message
                             string content;
                             cout << "Enter message: ";
                             getline(cin, content);
-                            Message* msg = new EncryptedMessage(currentUser->getUsername(), content);
-                            chat->sendMessage(msg);
-                            fm.savePrivateChat(chat);
-                            logger.log("Message sent in private chat");
+                            try {
+                                if (content.empty()) {
+                                    throw invalid_argument("Message content cannot be empty.");
+                                }
+                                Message* msg = new EncryptedMessage(currentUser->getUsername(), content);
+                                chat->sendMessage(msg);
+                                fm.savePrivateChat(chat);
+                                logger.log("Message sent in private chat");
+                            } catch (const exception& e) { // FIX 7: Basic Exception Handling
+                                cout << "Error: " << e.what() << endl;
+                            }
 
                         } else if (pchoice == 2) { // View History
                             chat->viewHistory();
@@ -235,14 +279,38 @@ int main() {
                     }
 
                 } else if (choice == 2) { // Search Messages
-                    string keyword;
+                    // Pre-load all relevant chats before searching
+                    for (auto u : users) {
+                        if (u == currentUser) continue;
+                        string u1 = currentUser->getUsername();
+                        string u2 = u->getUsername();
+                        if (u1 > u2) swap(u1, u2);
+                        string chatId = u1 + "_" + u2;
+
+                        if (privateChats.find(chatId) == privateChats.end()) {
+                            if (fm.privateChatExists(chatId)) {
+                                PrivateChat* loadedChat = fm.loadPrivateChat(chatId);
+                                if (loadedChat) {
+                                    privateChats[chatId] = loadedChat;
+                                }
+                            }
+                        }
+                    }
+
+                    string keyword, searchSender;
                     cout << "Enter keyword to search: ";
                     getline(cin, keyword);
+                    cout << "Enter sender username to filter by (or leave blank to search all): ";
+                    getline(cin, searchSender);
 
-                    // Search in all private chats
                     vector<Message*> results;
                     for (auto& pc : privateChats) {
-                        auto res = se.searchByKeyword(pc.second->getMessages(), keyword);
+                        vector<Message*> res;
+                        if (searchSender.empty()) {
+                             res = se.search(pc.second->getMessages(), keyword); // Overload 1
+                        } else {
+                             res = se.search(pc.second->getMessages(), keyword, searchSender); // Overload 2
+                        }
                         results.insert(results.end(), res.begin(), res.end());
                     }
 
@@ -251,13 +319,10 @@ int main() {
                         msg->display();
                     }
 
-                } else if (choice == 3) { // Notifications
-                    nm.displayNotifications();
-
-                } else if (choice == 4) { // Profile
+                } else if (choice == 3) { // Profile
                     currentUser->displayProfile();
 
-                } else if (choice == 5) { // Logout
+                } else if (choice == 4) { // Logout
                     currentUser->logout();
                     currentUser = nullptr;
                     logger.log("User logged out");

@@ -5,10 +5,8 @@
 #include "PrivateChat.h"
 #include "EncryptionManager.h"
 #include <vector>
-#include <map>
-#include <fstream>
 #include <string>
-#include <sstream>
+#include <fstream>
 
 class FileManager {
 private:
@@ -23,12 +21,13 @@ public:
     ~FileManager();
 
     // Methods
-    void saveUsers(std::vector<User*> users);
+    void saveUsers(const std::vector<User*>& users);
     std::vector<User*> loadUsers();
 
     void savePrivateChat(PrivateChat* chat);
-    PrivateChat* loadPrivateChat(std::string id, std::vector<User*>& users);
+    PrivateChat* loadPrivateChat(std::string id); // FIX 3: No dummy users created
     bool privateChatExists(std::string id);
+    void deletePrivateChatFile(std::string id);
 
     // Helper
     std::string getUserType(User* u);

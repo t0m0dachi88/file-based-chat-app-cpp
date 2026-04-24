@@ -42,6 +42,9 @@ public:
     void unblockUser(std::string u);
     bool isBlocked(std::string u) const;
 
+    // Type conversion operator (FIX 5)
+    operator std::string() const { return username; }
+
     // Operator overloading for output
     friend std::ostream& operator<<(std::ostream& os, const User& u);
 };

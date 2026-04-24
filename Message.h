@@ -26,12 +26,13 @@ public:
 
     // Getters
     std::string getSender() const { return sender; }
-    std::string getContent() const { return content; }
+    virtual std::string getContent() const { return content; } // FIX: Virtual to allow overriding
     std::string getTimestamp() const { return timestamp; }
     bool getIsRead() const { return isRead; }
 
     // Setters
     void setIsRead(bool r) { isRead = r; }
+    void setTimestamp(const std::string& ts) { timestamp = ts; } // FIX 1: Timestamp setter
 
     // Operator overloading
     friend std::ostream& operator<<(std::ostream& os, const Message& m);
