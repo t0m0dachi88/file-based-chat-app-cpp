@@ -22,8 +22,12 @@ void FileManager::saveUsers(const std::vector<User*>& users) {
         if (!file.is_open()) {
             throw std::runtime_error("Could not open users file for writing.");
         }
+        EncryptionManager em;
         for (auto u : users) {
-            file << getUserType(u) << "," << u->getUsername() << "," << u->getPassword() << std::endl;
+            std::string encryptedPassword = em.encrypt(u->getPassword(), 3);
+            std::string encryptedAnswer = em.encrypt(u->getSecurityAnswer(), 3);
+            file << getUserType(u) << "," << u->getUsername() << "," << encryptedPassword
+                 << "," << u->getSecurityQuestion() << "," << encryptedAnswer << std::endl;
         }
         file.close();
     } catch (const std::exception& e) { // FIX 7: Exception handling
@@ -41,16 +45,28 @@ std::vector<User*> FileManager::loadUsers() {
             return users;
         }
         std::string line;
+        EncryptionManager em;
         while (std::getline(file, line)) {
+            if (line.empty()) continue;
             std::stringstream ss(line);
-            std::string type, username, password;
+            std::string type, username, password, question, answer;
             std::getline(ss, type, ',');
             std::getline(ss, username, ',');
             std::getline(ss, password, ',');
+            std::getline(ss, question, ',');
+            std::getline(ss, answer, ',');
+            std::string decryptedPassword = em.decrypt(password, 3);
+            std::string decryptedAnswer = answer.empty() ? "" : em.decrypt(answer, 3);
+            User* u = nullptr;
             if (type == "Admin") {
-                users.push_back(new Admin(username, password));
+                u = new Admin(username, decryptedPassword);
             } else if (type == "Member") {
-                users.push_back(new Member(username, password));
+                u = new Member(username, decryptedPassword);
+            }
+            if (u) {
+                u->setSecurityQuestion(question);
+                u->setSecurityAnswer(decryptedAnswer);
+                users.push_back(u);
             }
         }
         file.close();

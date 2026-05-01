@@ -12,6 +12,8 @@ class User {
 protected:
     std::string username;
     std::string password;
+    std::string securityQuestion;
+    std::string securityAnswer;
     bool isOnline;
     std::set<std::string> blockedUsers; // STL set for blocked users
     int loginAttempts;
@@ -32,8 +34,15 @@ public:
     std::string getUsername() const { return username; }
     bool getIsOnline() const { return isOnline; }
     std::string getPassword() const { return password; }
+    std::string getSecurityQuestion() const { return securityQuestion; }
+    std::string getSecurityAnswer() const { return securityAnswer; }
 
     void setPassword(std::string p) { password = p; }
+    void setSecurityQuestion(std::string q) { securityQuestion = q; }
+    void setSecurityAnswer(std::string a) { securityAnswer = a; }
+
+    // Check if security answer matches
+    bool checkSecurityAnswer(const std::string& a) const { return securityAnswer == a; }
 
     // Methods
     bool login(std::string p);

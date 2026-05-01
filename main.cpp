@@ -28,7 +28,8 @@ void displayMainMenu() {
     cout << "\n===== MAIN MENU =====" << endl;
     cout << "1. Register" << endl;
     cout << "2. Login" << endl;
-    cout << "3. Exit" << endl;
+    cout << "3. Forgot Password" << endl;
+    cout << "4. Exit" << endl;
     cout << "Choose an option: ";
 }
 
@@ -87,7 +88,7 @@ int main() {
             clearInput();
 
             if (choice == 1) { // Register
-                string username, password, type;
+                string username, password, type, question, answer;
                 cout << "Enter username: ";
                 getline(cin, username);
                 cout << "Enter password: ";
@@ -100,12 +101,36 @@ int main() {
                     continue;
                 }
 
+                // Check for duplicate username
+                bool duplicate = false;
+                for (auto u : users) {
+                    if (u->getUsername() == username) { duplicate = true; break; }
+                }
+                if (duplicate) {
+                    cout << "Username already exists! Please choose another." << endl;
+                    continue;
+                }
+
+                // Security question setup
+                cout << "\n--- Security Question Setup ---" << endl;
+                cout << "Set a security question (e.g. What is your pet's name?): ";
+                getline(cin, question);
+                cout << "Set the answer: ";
+                getline(cin, answer);
+
+                if (question.empty() || answer.empty()) {
+                    cout << "Security question and answer cannot be empty." << endl;
+                    continue;
+                }
+
                 User* newUser = nullptr;
                 if (type == "admin") {
                     newUser = new Admin(username, password);
                 } else {
                     newUser = new Member(username, password);
                 }
+                newUser->setSecurityQuestion(question);
+                newUser->setSecurityAnswer(answer);
                 users.push_back(newUser);
                 fm.saveUsers(users);
                 logger.log("User registered: " + username);
@@ -120,12 +145,12 @@ int main() {
                 bool found = false;
                 for (auto u : users) {
                     if (u->getUsername() == username) {
+                        found = true;
                         if (u->login(password)) {
                             currentUser = u;
                             // Type conversion demonstrated: operator string()
-                            logger.log("User logged in: " + string(*currentUser)); 
+                            logger.log("User logged in: " + string(*currentUser));
                             cout << "Login successful!" << endl;
-                            found = true;
                         } else {
                             cout << "Invalid password!" << endl;
                         }
@@ -136,7 +161,45 @@ int main() {
                     cout << "User not found!" << endl;
                 }
 
-            } else if (choice == 3) { // Exit
+            } else if (choice == 3) { // Forgot Password
+                string username;
+                cout << "Enter your username: ";
+                getline(cin, username);
+                User* targetUser = nullptr;
+                for (auto u : users) {
+                    if (u->getUsername() == username) { targetUser = u; break; }
+                }
+                if (!targetUser) {
+                    cout << "User not found!" << endl;
+                } else if (targetUser->getSecurityQuestion().empty()) {
+                    cout << "No security question set for this account." << endl;
+                } else {
+                    cout << "Security Question: " << targetUser->getSecurityQuestion() << endl;
+                    cout << "Your Answer: ";
+                    string answer;
+                    getline(cin, answer);
+                    if (targetUser->checkSecurityAnswer(answer)) {
+                        string newPass, confirmPass;
+                        cout << "Answer correct! Enter new password: ";
+                        getline(cin, newPass);
+                        cout << "Confirm new password: ";
+                        getline(cin, confirmPass);
+                        if (newPass.empty()) {
+                            cout << "Password cannot be empty." << endl;
+                        } else if (newPass != confirmPass) {
+                            cout << "Passwords do not match!" << endl;
+                        } else {
+                            targetUser->setPassword(newPass);
+                            fm.saveUsers(users);
+                            logger.log("Password reset for: " + username);
+                            cout << "Password reset successful! You can now log in." << endl;
+                        }
+                    } else {
+                        cout << "Incorrect answer! Password reset denied." << endl;
+                    }
+                }
+
+            } else if (choice == 4) { // Exit
                 break;
             } else {
                 cout << "Invalid choice!" << endl;
