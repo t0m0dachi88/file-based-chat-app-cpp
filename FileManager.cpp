@@ -7,7 +7,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <cstdio>
-#include <filesystem>
+#include <dirent.h>
 
 // Constructor
 FileManager::FileManager() {}
@@ -165,22 +165,23 @@ void FileManager::deletePrivateChatFile(std::string id) {
 // Get all chat IDs for user
 std::vector<std::string> FileManager::getAllChatIdsForUser(std::string username) {
     std::vector<std::string> ids;
-    if (!std::filesystem::exists(privateChatsDir)) return ids;
+    DIR* dir = opendir(privateChatsDir.c_str());
+    if (dir == NULL) return ids;
     
-    for (const auto& entry : std::filesystem::directory_iterator(privateChatsDir)) {
-        if (entry.is_regular_file()) {
-            std::string filename = entry.path().filename().string();
-            if (filename.find(".txt") != std::string::npos) {
-                std::string id = filename.substr(0, filename.find(".txt"));
-                std::string search1 = username + "_";
-                std::string search2 = "_" + username;
-                // Check if id starts with search1 or ends with search2
-                if (id.find(search1) == 0 || (id.length() >= search2.length() && id.compare(id.length() - search2.length(), search2.length(), search2) == 0)) {
-                    ids.push_back(id);
-                }
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        std::string filename = entry->d_name;
+        if (filename.find(".txt") != std::string::npos) {
+            std::string id = filename.substr(0, filename.find(".txt"));
+            std::string search1 = username + "_";
+            std::string search2 = "_" + username;
+            // Check if id starts with search1 or ends with search2
+            if (id.find(search1) == 0 || (id.length() >= search2.length() && id.compare(id.length() - search2.length(), search2.length(), search2) == 0)) {
+                ids.push_back(id);
             }
         }
     }
+    closedir(dir);
     return ids;
 }
 

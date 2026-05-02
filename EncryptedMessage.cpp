@@ -31,6 +31,8 @@ std::string EncryptedMessage::encrypt(std::string text) const {
         if (isalpha(c)) {
             char base = isupper(c) ? 'A' : 'a';
             c = (c - base + shift) % 26 + base;
+        } else if (isdigit(c)) {
+            c = (c - '0' + shift) % 10 + '0';
         }
     }
     return result;
@@ -43,6 +45,8 @@ std::string EncryptedMessage::decrypt(std::string text) const {
         if (isalpha(c)) {
             char base = isupper(c) ? 'A' : 'a';
             c = (c - base - shift + 26) % 26 + base;
+        } else if (isdigit(c)) {
+            c = (c - '0' - shift + 10) % 10 + '0';
         }
     }
     return result;
