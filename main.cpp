@@ -9,15 +9,19 @@
 #include "EncryptionManager.h"
 #include "SearchEngine.h"
 #include "Logger.h"
+
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <iostream>
 #include <string>
 #include <limits>
 #include <algorithm>
-#include <cstdlib>
+#include <memory>
+#include <stdexcept>
 
 using namespace std;
+
+// --- Utility Functions ---
 
 void clearInput() {
     cin.clear();
@@ -58,23 +62,22 @@ void displayAdminMenu() {
     cout << "Choose an option: ";
 }
 
-int main() {
-    // Create necessary directories
-    system("mkdir data\\private_chats 2>nul");
-    system("mkdir data\\logs 2>nul");
+// --- Main Application Logic ---
 
-    vector<User*> users;
-    map<string, PrivateChat*> privateChats;
+int main() {
+    // Note: Directory creation is now safely handled inside FileManager constructor
     FileManager fm;
     SearchEngine se;
-    EncryptionManager em;
     Logger<string> logger("app");
+    
+    // Core state uses std::unique_ptr for memory safety
+    vector<unique_ptr<User>> users = fm.loadUsers();
+    unordered_map<string, unique_ptr<PrivateChat>> privateChats;
+    
+    // Raw pointer for observing (not owning) the current session
     User* currentUser = nullptr;
 
-    // Load existing users
-    users = fm.loadUsers();
-
-    logger.log("Application started");
+    logger.log("Application started successfully.");
 
     while (true) {
         if (!currentUser) {
@@ -97,17 +100,15 @@ int main() {
                 getline(cin, type);
 
                 if (username.empty() || password.empty()) {
-                    cout << "Username and password cannot be empty." << endl;
+                    cout << "Error: Username and password cannot be empty." << endl;
                     continue;
                 }
 
-                // Check for duplicate username
-                bool duplicate = false;
-                for (auto u : users) {
-                    if (u->getUsername() == username) { duplicate = true; break; }
-                }
-                if (duplicate) {
-                    cout << "Username already exists! Please choose another." << endl;
+                // Check for duplicate username using algorithm
+                auto it = find_if(users.begin(), users.end(), 
+                    [&](const unique_ptr<User>& u) { return u->getUsername() == username; });
+                if (it != users.end()) {
+                    cout << "Error: Username already exists! Please choose another." << endl;
                     continue;
                 }
 
@@ -119,22 +120,28 @@ int main() {
                 getline(cin, answer);
 
                 if (question.empty() || answer.empty()) {
-                    cout << "Security question and answer cannot be empty." << endl;
+                    cout << "Error: Security question and answer cannot be empty." << endl;
                     continue;
                 }
 
-                User* newUser = nullptr;
-                if (type == "admin") {
-                    newUser = new Admin(username, password);
-                } else {
-                    newUser = new Member(username, password);
+                try {
+                    unique_ptr<User> newUser;
+                    if (type == "admin" || type == "Admin") {
+                        newUser = make_unique<Admin>(username, password);
+                    } else {
+                        newUser = make_unique<Member>(username, password); // Default to member
+                    }
+                    newUser->setSecurityQuestion(question);
+                    newUser->setSecurityAnswer(answer);
+                    
+                    users.push_back(move(newUser));
+                    fm.saveUsers(users);
+                    
+                    logger.log("User registered successfully: " + username);
+                    cout << "Registration successful! You may now log in." << endl;
+                } catch (const exception& e) {
+                    cout << "Registration failed: " << e.what() << endl;
                 }
-                newUser->setSecurityQuestion(question);
-                newUser->setSecurityAnswer(answer);
-                users.push_back(newUser);
-                fm.saveUsers(users);
-                logger.log("User registered: " + username);
-                cout << "Registration successful!" << endl;
 
             } else if (choice == 2) { // Login
                 string username, password;
@@ -142,70 +149,83 @@ int main() {
                 getline(cin, username);
                 cout << "Enter password: ";
                 getline(cin, password);
+                
                 bool found = false;
-                for (auto u : users) {
+                for (const auto& u : users) {
                     if (u->getUsername() == username) {
                         found = true;
                         if (u->login(password)) {
-                            currentUser = u;
-                            // Type conversion demonstrated: operator string()
+                            currentUser = u.get();
+                            // Demonstrating type conversion operator
                             logger.log("User logged in: " + string(*currentUser));
-                            cout << "Login successful!" << endl;
+                            cout << "Login successful! Welcome, " << currentUser->getUsername() << "." << endl;
                         } else {
-                            cout << "Invalid password!" << endl;
+                            cout << "Error: Invalid password!" << endl;
                         }
                         break;
                     }
                 }
                 if (!found) {
-                    cout << "User not found!" << endl;
+                    cout << "Error: User not found!" << endl;
                 }
 
             } else if (choice == 3) { // Forgot Password
                 string username;
                 cout << "Enter your username: ";
                 getline(cin, username);
+                
                 User* targetUser = nullptr;
-                for (auto u : users) {
-                    if (u->getUsername() == username) { targetUser = u; break; }
+                for (const auto& u : users) {
+                    if (u->getUsername() == username) { 
+                        targetUser = u.get(); 
+                        break; 
+                    }
                 }
+                
                 if (!targetUser) {
-                    cout << "User not found!" << endl;
+                    cout << "Error: User not found!" << endl;
                 } else if (targetUser->getSecurityQuestion().empty()) {
-                    cout << "No security question set for this account." << endl;
+                    cout << "Error: No security question set for this account." << endl;
                 } else {
                     cout << "Security Question: " << targetUser->getSecurityQuestion() << endl;
                     cout << "Your Answer: ";
                     string answer;
                     getline(cin, answer);
+                    
                     if (targetUser->checkSecurityAnswer(answer)) {
                         string newPass, confirmPass;
                         cout << "Answer correct! Enter new password: ";
                         getline(cin, newPass);
                         cout << "Confirm new password: ";
                         getline(cin, confirmPass);
+                        
                         if (newPass.empty()) {
-                            cout << "Password cannot be empty." << endl;
+                            cout << "Error: Password cannot be empty." << endl;
                         } else if (newPass != confirmPass) {
-                            cout << "Passwords do not match!" << endl;
+                            cout << "Error: Passwords do not match!" << endl;
                         } else {
-                            targetUser->setPassword(newPass);
-                            fm.saveUsers(users);
-                            logger.log("Password reset for: " + username);
-                            cout << "Password reset successful! You can now log in." << endl;
+                            try {
+                                targetUser->setPassword(newPass);
+                                fm.saveUsers(users);
+                                logger.log("Password reset successful for: " + username);
+                                cout << "Password reset successful! You can now log in." << endl;
+                            } catch (const exception& e) {
+                                cout << "Failed to reset password: " << e.what() << endl;
+                            }
                         }
                     } else {
-                        cout << "Incorrect answer! Password reset denied." << endl;
+                        cout << "Error: Incorrect answer! Password reset denied." << endl;
                     }
                 }
 
             } else if (choice == 4) { // Exit
                 break;
             } else {
-                cout << "Invalid choice!" << endl;
+                cout << "Invalid choice! Please select an option from the menu." << endl;
             }
         } else {
-            // Dashboard or Admin menu
+            // --- Logged In Session ---
+            
             if (currentUser->canModerate()) {
                 displayAdminMenu();
                 int choice;
@@ -220,45 +240,54 @@ int main() {
                     string username;
                     cout << "Enter username to remove: ";
                     getline(cin, username);
-                    auto it = find_if(users.begin(), users.end(), [&](User* u){ return u->getUsername() == username; });
+                    
+                    if (username == currentUser->getUsername()) {
+                        cout << "Error: You cannot remove yourself." << endl;
+                        continue;
+                    }
+
+                    auto it = find_if(users.begin(), users.end(), 
+                        [&](const unique_ptr<User>& u){ return u->getUsername() == username; });
+                        
                     if (it != users.end()) {
                         string targetUser = (*it)->getUsername();
-                        delete *it;
-                        users.erase(it);
+                        users.erase(it); // unique_ptr automatically cleans up memory
                         fm.saveUsers(users);
                         
-                        // FIX 2: Prevent dangling pointers/memory issues, clean up chats related to removed user
+                        // Clean up associated private chats
                         auto chatIt = privateChats.begin();
                         while (chatIt != privateChats.end()) {
                             if (chatIt->second->getUser1() == targetUser || chatIt->second->getUser2() == targetUser) {
                                 fm.deletePrivateChatFile(chatIt->second->getId());
-                                delete chatIt->second;
                                 chatIt = privateChats.erase(chatIt);
                             } else {
                                 ++chatIt;
                             }
                         }
 
-                        logger.log("User removed: " + username);
-                        cout << "User removed!" << endl;
+                        logger.log("Admin removed user: " + username);
+                        cout << "User removed successfully!" << endl;
                     } else {
-                        cout << "User not found!" << endl;
+                        cout << "Error: User not found!" << endl;
                     }
 
                 } else if (choice == 2) { // View All Users
-                    cout << "All Users:" << endl;
-                    for (auto u : users) {
+                    cout << "\n--- All Registered Users ---" << endl;
+                    if (users.empty()) cout << "No users found." << endl;
+                    for (const auto& u : users) {
                         cout << *u << endl;
                     }
 
                 } else if (choice == 3) { // Logout
                     currentUser->logout();
                     currentUser = nullptr;
-                    logger.log("Admin logged out");
+                    logger.log("Admin logged out.");
+                    cout << "Logged out successfully." << endl;
 
                 } else {
                     cout << "Invalid choice!" << endl;
                 }
+                
             } else {
                 displayDashboard();
                 int choice;
@@ -273,16 +302,21 @@ int main() {
                     string recipient;
                     cout << "Enter recipient username: ";
                     getline(cin, recipient);
+                    
+                    if (recipient == currentUser->getUsername()) {
+                        cout << "Error: You cannot chat with yourself." << endl;
+                        continue;
+                    }
 
                     User* recUser = nullptr;
-                    for (auto u : users) {
+                    for (const auto& u : users) {
                         if (u->getUsername() == recipient) {
-                            recUser = u;
+                            recUser = u.get();
                             break;
                         }
                     }
                     if (!recUser) {
-                        cout << "User not found!" << endl;
+                        cout << "Error: User not found!" << endl;
                         continue;
                     }
 
@@ -291,19 +325,21 @@ int main() {
                     if (u1 > u2) swap(u1, u2);
                     string chatId = u1 + "_" + u2;
 
+                    // Lazy load chat if not in memory
                     if (privateChats.find(chatId) == privateChats.end()) {
                         if (fm.privateChatExists(chatId)) {
-                            PrivateChat* loadedChat = fm.loadPrivateChat(chatId);
+                            auto loadedChat = fm.loadPrivateChat(chatId);
                             if (loadedChat) {
-                                privateChats[chatId] = loadedChat;
+                                privateChats[chatId] = move(loadedChat);
                             } else {
-                                privateChats[chatId] = new PrivateChat(currentUser->getUsername(), recUser->getUsername());
+                                privateChats[chatId] = make_unique<PrivateChat>(currentUser->getUsername(), recUser->getUsername());
                             }
                         } else {
-                            privateChats[chatId] = new PrivateChat(currentUser->getUsername(), recUser->getUsername());
+                            privateChats[chatId] = make_unique<PrivateChat>(currentUser->getUsername(), recUser->getUsername());
                         }
                     }
-                    PrivateChat* chat = privateChats[chatId];
+                    
+                    PrivateChat* chat = privateChats[chatId].get();
 
                     while (true) {
                         displayPrivateChatMenu();
@@ -323,16 +359,20 @@ int main() {
                                 if (content.empty()) {
                                     throw invalid_argument("Message content cannot be empty.");
                                 }
-                                Message* msg = new EncryptedMessage(currentUser->getUsername(), content);
-                                chat->sendMessage(msg);
+                                auto msg = make_unique<EncryptedMessage>(currentUser->getUsername(), content);
+                                chat->addMessage(move(msg));
                                 fm.savePrivateChat(chat);
-                                logger.log("Message sent in private chat");
-                            } catch (const exception& e) { // FIX 7: Basic Exception Handling
+                                logger.log("Message sent in private chat: " + chatId);
+                                cout << "Message sent." << endl;
+                            } catch (const exception& e) {
                                 cout << "Error: " << e.what() << endl;
                             }
 
                         } else if (pchoice == 2) { // View History
+                            cout << "\n--- Chat History ---" << endl;
                             chat->viewHistory();
+                            chat->markAsRead(); // Mark as read explicitly after viewing
+                            fm.savePrivateChat(chat); // Save state
 
                         } else if (pchoice == 3) { // Back
                             break;
@@ -346,9 +386,9 @@ int main() {
                     vector<string> chatIds = fm.getAllChatIdsForUser(currentUser->getUsername());
                     for (const string& chatId : chatIds) {
                         if (privateChats.find(chatId) == privateChats.end()) {
-                            PrivateChat* loadedChat = fm.loadPrivateChat(chatId);
+                            auto loadedChat = fm.loadPrivateChat(chatId);
                             if (loadedChat) {
-                                privateChats[chatId] = loadedChat;
+                                privateChats[chatId] = move(loadedChat);
                             }
                         }
                     }
@@ -359,29 +399,43 @@ int main() {
                     cout << "Enter sender username to filter by (or leave blank to search all): ";
                     getline(cin, searchSender);
 
-                    vector<Message*> results;
-                    for (auto& pc : privateChats) {
-                        vector<Message*> res;
-                        if (searchSender.empty()) {
-                             res = se.search(pc.second->getMessages(), keyword); // Overload 1
-                        } else {
-                             res = se.search(pc.second->getMessages(), keyword, searchSender); // Overload 2
-                        }
-                        results.insert(results.end(), res.begin(), res.end());
+                    if (keyword.empty()) {
+                        cout << "Error: Keyword cannot be empty." << endl;
+                        continue;
                     }
 
-                    cout << "Search results (" << results.size() << "):" << endl;
-                    for (auto msg : results) {
-                        msg->display();
+                    vector<const Message*> results;
+                    for (const auto& pc : privateChats) {
+                        // Only search in chats where the current user is a participant
+                        if (pc.second->getUser1() == currentUser->getUsername() || pc.second->getUser2() == currentUser->getUsername()) {
+                            vector<const Message*> res;
+                            if (searchSender.empty()) {
+                                res = se.search(pc.second->getMessages(), keyword);
+                            } else {
+                                res = se.search(pc.second->getMessages(), keyword, searchSender);
+                            }
+                            results.insert(results.end(), res.begin(), res.end());
+                        }
+                    }
+
+                    cout << "\n--- Search Results (" << results.size() << ") ---" << endl;
+                    if (results.empty()) {
+                        cout << "No messages found matching your criteria." << endl;
+                    } else {
+                        for (const auto* msg : results) {
+                            msg->display();
+                        }
                     }
 
                 } else if (choice == 3) { // Profile
+                    cout << "\n--- Profile Information ---" << endl;
                     currentUser->displayProfile();
 
                 } else if (choice == 4) { // Logout
                     currentUser->logout();
                     currentUser = nullptr;
-                    logger.log("User logged out");
+                    logger.log("User logged out.");
+                    cout << "Logged out successfully." << endl;
 
                 } else {
                     cout << "Invalid choice!" << endl;
@@ -390,14 +444,9 @@ int main() {
         }
     }
 
-    // Cleanup
-    for (auto u : users) {
-        delete u;
-    }
-    for (auto pc : privateChats) {
-        delete pc.second;
-    }
-
-    logger.log("Application exited");
+    // No manual memory cleanup required! std::unique_ptr handles all dynamic memory safely.
+    logger.log("Application exited normally.");
+    cout << "Thank you for using Kilo Chat App. Goodbye!" << endl;
+    
     return 0;
 }

@@ -1,17 +1,18 @@
 #include "TextMessage.h"
 
-// Constructor
-TextMessage::TextMessage(std::string s, std::string c) : Message(s, c) {}
+// --- Constructor ---
+TextMessage::TextMessage(const std::string& sender, const std::string& content) 
+    : Message(sender, content) {}
 
-// Destructor
-TextMessage::~TextMessage() {}
+// --- Destructor ---
+TextMessage::~TextMessage() = default;
 
-// Override display
-void TextMessage::display() {
+// --- Override Methods ---
+
+void TextMessage::display() const {
     std::cout << *this << std::endl;
 }
 
-// Override getType
-std::string TextMessage::getType() {
+std::string TextMessage::getType() const {
     return "Text";
 }

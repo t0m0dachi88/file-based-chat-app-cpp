@@ -2,26 +2,26 @@
 #define ENCRYPTEDMESSAGE_H
 
 #include "Message.h"
+#include "EncryptionManager.h"
 
+/// @brief Represents a message that is stored in an encrypted format.
+/// Demonstrates composition (using EncryptionManager) to avoid code duplication.
 class EncryptedMessage : public Message {
 private:
-    int shift; // for Caesar cipher
+    int shift_;
+    EncryptionManager encryptionManager_;
 
 public:
     // Constructor
-    EncryptedMessage(std::string s, std::string c, int sh = 3);
+    EncryptedMessage(const std::string& sender, const std::string& content, int shift = 3);
 
     // Destructor
-    ~EncryptedMessage();
+    ~EncryptedMessage() override;
 
     // Override virtual methods
-    void display() override;
-    std::string getType() override;
+    void display() const override;
+    std::string getType() const override;
     std::string getContent() const override;
-
-    // Encryption methods
-    std::string encrypt(std::string text) const;
-    std::string decrypt(std::string text) const;
 };
 
-#endif
+#endif // ENCRYPTEDMESSAGE_H

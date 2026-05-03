@@ -1,23 +1,30 @@
 #include "Member.h"
+#include <iostream>
+#include <stdexcept>
 
-// Constructor
-Member::Member(std::string u, std::string p) : User(u, p) {}
+// --- Constructor ---
+Member::Member(const std::string& username, const std::string& password) 
+    : User(username, password) {}
 
-// Destructor
-Member::~Member() {}
+// --- Destructor ---
+Member::~Member() = default;
 
-// Override displayProfile
-void Member::displayProfile() {
-    std::cout << "Member Profile: " << username << std::endl;
+// --- Override Methods ---
+
+void Member::displayProfile() const {
+    std::cout << "[Member Profile] Username: " << getUsername() << std::endl;
 }
 
-// Override canModerate
-bool Member::canModerate() {
+bool Member::canModerate() const {
     return false;
 }
 
-// Member method
-void Member::changePassword(std::string newPass) {
-    password = newPass;
-    std::cout << "Password changed for " << username << std::endl;
+// --- Member Specific Methods ---
+
+void Member::changePassword(const std::string& newPassword) {
+    if (newPassword.empty()) {
+        throw std::invalid_argument("New password cannot be empty.");
+    }
+    setPassword(newPassword);
+    std::cout << "[Success] Password changed successfully for user: " << getUsername() << std::endl;
 }

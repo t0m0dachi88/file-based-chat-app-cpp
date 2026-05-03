@@ -4,19 +4,19 @@
 #include "Message.h"
 #include <vector>
 #include <string>
+#include <memory>
 
+/// @brief Search utility to find messages.
+/// Demonstrates function overloading (compile-time polymorphism).
 class SearchEngine {
 public:
-    // Constructor
-    SearchEngine();
+    SearchEngine() = default;
+    ~SearchEngine() = default;
 
-    // Destructor
-    ~SearchEngine();
-
-    // Overloaded search methods (FIX 6: Compile-time polymorphism)
-    // FIX 4: Pass-by-value inefficiency fixed (using const reference)
-    std::vector<Message*> search(const std::vector<Message*>& messages, std::string keyword);
-    std::vector<Message*> search(const std::vector<Message*>& messages, std::string keyword, std::string sender);
+    // Overloaded search methods
+    // Returns a vector of non-owning const raw pointers to the found messages.
+    std::vector<const Message*> search(const std::vector<std::unique_ptr<Message>>& messages, const std::string& keyword) const;
+    std::vector<const Message*> search(const std::vector<std::unique_ptr<Message>>& messages, const std::string& keyword, const std::string& sender) const;
 };
 
-#endif
+#endif // SEARCHENGINE_H

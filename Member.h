@@ -2,21 +2,23 @@
 #define MEMBER_H
 
 #include "User.h"
+#include <string>
 
+/// @brief Member class inheriting from User. Represents a regular user.
 class Member : public User {
 public:
     // Constructor
-    Member(std::string u, std::string p);
+    Member(const std::string& username, const std::string& password);
 
     // Destructor
-    ~Member();
+    ~Member() override;
 
     // Override virtual methods
-    void displayProfile() override;
-    bool canModerate() override;
+    void displayProfile() const override;
+    bool canModerate() const override;
 
     // Member specific methods
-    void changePassword(std::string newPass);
+    void changePassword(const std::string& newPassword);
 };
 
-#endif
+#endif // MEMBER_H

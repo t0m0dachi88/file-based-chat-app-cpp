@@ -1,28 +1,22 @@
 #include "SearchEngine.h"
 
-// Constructor
-SearchEngine::SearchEngine() {}
-
-// Destructor
-SearchEngine::~SearchEngine() {}
-
-// Search by keyword
-std::vector<Message*> SearchEngine::search(const std::vector<Message*>& messages, std::string keyword) {
-    std::vector<Message*> results;
-    for (auto msg : messages) {
+// --- Search by keyword ---
+std::vector<const Message*> SearchEngine::search(const std::vector<std::unique_ptr<Message>>& messages, const std::string& keyword) const {
+    std::vector<const Message*> results;
+    for (const auto& msg : messages) {
         if (msg->getContent().find(keyword) != std::string::npos) {
-            results.push_back(msg);
+            results.push_back(msg.get());
         }
     }
     return results;
 }
 
-// Search by keyword and sender
-std::vector<Message*> SearchEngine::search(const std::vector<Message*>& messages, std::string keyword, std::string sender) {
-    std::vector<Message*> results;
-    for (auto msg : messages) {
+// --- Search by keyword and sender ---
+std::vector<const Message*> SearchEngine::search(const std::vector<std::unique_ptr<Message>>& messages, const std::string& keyword, const std::string& sender) const {
+    std::vector<const Message*> results;
+    for (const auto& msg : messages) {
         if (msg->getSender() == sender && msg->getContent().find(keyword) != std::string::npos) {
-            results.push_back(msg);
+            results.push_back(msg.get());
         }
     }
     return results;

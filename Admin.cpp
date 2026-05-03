@@ -1,26 +1,31 @@
 #include "Admin.h"
+#include <iostream>
 
-// Constructor
-Admin::Admin(std::string u, std::string p) : User(u, p) {}
+// --- Constructor ---
+Admin::Admin(const std::string& username, const std::string& password) 
+    : User(username, password) {}
 
-// Destructor
-Admin::~Admin() {}
+// --- Destructor ---
+Admin::~Admin() = default;
 
-// Override displayProfile
-void Admin::displayProfile() {
-    std::cout << "Admin Profile: " << username << std::endl;
+// --- Override Methods ---
+
+void Admin::displayProfile() const {
+    std::cout << "[Admin Profile] Username: " << getUsername() << std::endl;
 }
 
-// Override canModerate
-bool Admin::canModerate() {
+bool Admin::canModerate() const {
     return true;
 }
 
-// Admin methods
-void Admin::removeUserFromRoom(std::string username) {
-    std::cout << "Admin " << this->username << " removed user " << username << " from room." << std::endl;
+// --- Admin Specific Methods ---
+
+void Admin::removeUserFromRoom(const std::string& targetUsername) const {
+    std::cout << "[Admin Action] " << getUsername() 
+              << " removed user '" << targetUsername << "' from the room." << std::endl;
 }
 
-void Admin::muteUser(std::string username) {
-    std::cout << "Admin " << this->username << " muted user " << username << "." << std::endl;
+void Admin::muteUser(const std::string& targetUsername) const {
+    std::cout << "[Admin Action] " << getUsername() 
+              << " muted user '" << targetUsername << "'." << std::endl;
 }

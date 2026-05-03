@@ -1,47 +1,83 @@
 #include "User.h"
-#include <algorithm>
 
-// Constructor
-User::User(std::string u, std::string p)
-    : username(u), password(p), isOnline(false), loginAttempts(0) {}
+// --- Constructor ---
+User::User(const std::string& username, const std::string& password)
+    : username_(username), password_(password), isOnline_(false), loginAttempts_(0) {
+    if (username.empty()) {
+        throw std::invalid_argument("Username cannot be empty.");
+    }
+    if (password.empty()) {
+        throw std::invalid_argument("Password cannot be empty.");
+    }
+}
 
-// Pure virtual destructor
+// Pure virtual destructor definition (required for linkage)
 User::~User() {}
 
-// Login with attempt limit
-bool User::login(std::string p) {
-    if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+// --- Setters with validation ---
+
+void User::setPassword(const std::string& password) {
+    if (password.empty()) {
+        throw std::invalid_argument("Password cannot be empty.");
+    }
+    password_ = password;
+}
+
+void User::setSecurityQuestion(const std::string& question) {
+    securityQuestion_ = question;
+}
+
+void User::setSecurityAnswer(const std::string& answer) {
+    securityAnswer_ = answer;
+}
+
+// --- Security verification ---
+
+bool User::checkSecurityAnswer(const std::string& answer) const {
+    return securityAnswer_ == answer;
+}
+
+// --- Authentication ---
+
+bool User::login(const std::string& password) {
+    if (loginAttempts_ >= kMaxLoginAttempts) {
         std::cout << "Too many failed attempts. Account locked." << std::endl;
         return false;
     }
-    if (password == p) {
-        isOnline = true;
-        loginAttempts = 0;
+    if (password_ == password) {
+        isOnline_ = true;
+        loginAttempts_ = 0;
         return true;
-    } else {
-        loginAttempts++;
-        return false;
     }
+    ++loginAttempts_;
+    return false;
 }
 
 void User::logout() {
-    isOnline = false;
+    isOnline_ = false;
 }
 
-void User::blockUser(std::string u) {
-    blockedUsers.insert(u);
+// --- Block management ---
+
+void User::blockUser(const std::string& username) {
+    if (username.empty()) {
+        throw std::invalid_argument("Cannot block an empty username.");
+    }
+    blockedUsers_.insert(username);
 }
 
-void User::unblockUser(std::string u) {
-    blockedUsers.erase(u);
+void User::unblockUser(const std::string& username) {
+    blockedUsers_.erase(username);
 }
 
-bool User::isBlocked(std::string u) const {
-    return blockedUsers.find(u) != blockedUsers.end();
+bool User::isBlocked(const std::string& username) const {
+    return blockedUsers_.count(username) > 0;
 }
 
-// Operator overloading
-std::ostream& operator<<(std::ostream& os, const User& u) {
-    os << "Username: " << u.username << ", Online: " << (u.isOnline ? "Yes" : "No");
+// --- Operator overloading ---
+
+std::ostream& operator<<(std::ostream& os, const User& user) {
+    os << "Username: " << user.username_
+       << " | Status: " << (user.isOnline_ ? "Online" : "Offline");
     return os;
 }

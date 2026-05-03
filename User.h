@@ -2,60 +2,65 @@
 #define USER_H
 
 #include <string>
-#include <vector>
 #include <set>
 #include <iostream>
-#include <ctime>
+#include <stdexcept>
 
-// Abstract base class for User
+/// @brief Abstract base class representing a user in the chat system.
+/// Demonstrates: abstract class, pure virtual functions, operator overloading,
+/// type conversion operator, encapsulation, and STL set usage.
 class User {
-protected:
-    std::string username;
-    std::string password;
-    std::string securityQuestion;
-    std::string securityAnswer;
-    bool isOnline;
-    std::set<std::string> blockedUsers; // STL set for blocked users
-    int loginAttempts;
-    static const int MAX_LOGIN_ATTEMPTS = 3;
+private:
+    std::string username_;
+    std::string password_;
+    std::string securityQuestion_;
+    std::string securityAnswer_;
+    bool isOnline_;
+    std::set<std::string> blockedUsers_;  // STL set for O(log n) lookup
+    int loginAttempts_;
+    static const int kMaxLoginAttempts = 3;
 
 public:
     // Constructor
-    User(std::string u, std::string p);
+    explicit User(const std::string& username, const std::string& password);
 
     // Pure virtual destructor for polymorphism
     virtual ~User() = 0;
 
-    // Pure virtual methods
-    virtual void displayProfile() = 0;
-    virtual bool canModerate() = 0;
+    // Pure virtual methods (runtime polymorphism)
+    virtual void displayProfile() const = 0;
+    virtual bool canModerate() const = 0;
 
-    // Getters and setters
-    std::string getUsername() const { return username; }
-    bool getIsOnline() const { return isOnline; }
-    std::string getPassword() const { return password; }
-    std::string getSecurityQuestion() const { return securityQuestion; }
-    std::string getSecurityAnswer() const { return securityAnswer; }
+    // --- Getters (const-correct) ---
+    const std::string& getUsername() const { return username_; }
+    const std::string& getPassword() const { return password_; }
+    bool getIsOnline() const { return isOnline_; }
+    const std::string& getSecurityQuestion() const { return securityQuestion_; }
+    const std::string& getSecurityAnswer() const { return securityAnswer_; }
+    const std::set<std::string>& getBlockedUsers() const { return blockedUsers_; }
 
-    void setPassword(std::string p) { password = p; }
-    void setSecurityQuestion(std::string q) { securityQuestion = q; }
-    void setSecurityAnswer(std::string a) { securityAnswer = a; }
+    // --- Setters (validated) ---
+    void setPassword(const std::string& password);
+    void setSecurityQuestion(const std::string& question);
+    void setSecurityAnswer(const std::string& answer);
 
-    // Check if security answer matches
-    bool checkSecurityAnswer(const std::string& a) const { return securityAnswer == a; }
+    // Security verification
+    bool checkSecurityAnswer(const std::string& answer) const;
 
-    // Methods
-    bool login(std::string p);
+    // Authentication
+    bool login(const std::string& password);
     void logout();
-    void blockUser(std::string u);
-    void unblockUser(std::string u);
-    bool isBlocked(std::string u) const;
 
-    // Type conversion operator (FIX 5)
-    operator std::string() const { return username; }
+    // Block management
+    void blockUser(const std::string& username);
+    void unblockUser(const std::string& username);
+    bool isBlocked(const std::string& username) const;
+
+    // Type conversion operator (compile-time polymorphism demonstration)
+    explicit operator std::string() const { return username_; }
 
     // Operator overloading for output
-    friend std::ostream& operator<<(std::ostream& os, const User& u);
+    friend std::ostream& operator<<(std::ostream& os, const User& user);
 };
 
-#endif
+#endif // USER_H

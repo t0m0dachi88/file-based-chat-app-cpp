@@ -4,32 +4,39 @@
 #include "Message.h"
 #include <vector>
 #include <string>
+#include <memory>
 
+/// @brief Represents a private chat between two users.
+/// Demonstrates proper memory management using std::unique_ptr.
 class PrivateChat {
 private:
-    std::string id;
-    std::string user1; // FIX 2: Dangling pointer fix, use string
-    std::string user2;
-    std::vector<Message*> messages; // STL vector
+    std::string id_;
+    std::string user1_;
+    std::string user2_;
+    
+    // Using std::unique_ptr to completely eliminate memory leaks from dangling raw pointers
+    std::vector<std::unique_ptr<Message>> messages_; 
 
 public:
     // Constructor
-    PrivateChat(std::string u1, std::string u2);
+    PrivateChat(const std::string& user1, const std::string& user2);
 
     // Destructor
-    ~PrivateChat();
+    ~PrivateChat() = default; // unique_ptr automatically cleans up
 
     // Methods
-    void sendMessage(Message* msg);
-    void viewHistory();
+    void addMessage(std::unique_ptr<Message> msg); // Renamed from sendMessage for clarity
+    void viewHistory() const;
     void markAsRead();
     int getUnreadCount() const;
 
-    // Getters
-    std::string getId() const { return id; }
-    std::string getUser1() const { return user1; }
-    std::string getUser2() const { return user2; }
-    const std::vector<Message*>& getMessages() const { return messages; } // Const reference
+    // --- Getters ---
+    const std::string& getId() const { return id_; }
+    const std::string& getUser1() const { return user1_; }
+    const std::string& getUser2() const { return user2_; }
+    
+    // Return const reference to vector to avoid copying
+    const std::vector<std::unique_ptr<Message>>& getMessages() const { return messages_; }
 };
 
-#endif
+#endif // PRIVATECHAT_H

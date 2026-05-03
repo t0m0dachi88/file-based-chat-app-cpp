@@ -1,53 +1,31 @@
 #include "EncryptedMessage.h"
+#include <iostream>
 
-// Constructor
-EncryptedMessage::EncryptedMessage(std::string s, std::string c, int sh) : Message(s, c), shift(sh) {
-    content = encrypt(c); // encrypt on creation
+// --- Constructor ---
+// Note: We immediately encrypt the content for secure storage in memory
+EncryptedMessage::EncryptedMessage(const std::string& sender, const std::string& content, int shift) 
+    : Message(sender, ""), shift_(shift) { // Initialize base with empty content first
+    
+    // Encrypt the incoming plaintext content and store it in base class field
+    content_ = encryptionManager_.encrypt(content, shift_);
 }
 
-// Destructor
-EncryptedMessage::~EncryptedMessage() {}
+// --- Destructor ---
+EncryptedMessage::~EncryptedMessage() = default;
 
-// Override display - decrypt for display
-void EncryptedMessage::display() {
-    std::string decrypted = decrypt(content);
-    std::cout << "[" << timestamp << "] " << sender << ": " << decrypted << " (Encrypted)" << std::endl;
+// --- Override Methods ---
+
+void EncryptedMessage::display() const {
+    // Decrypt on the fly for display
+    std::string decrypted = encryptionManager_.decrypt(content_, shift_);
+    std::cout << "[" << timestamp_ << "] " << sender_ << ": " << decrypted << " (Encrypted)" << std::endl;
 }
 
-// Override getType
-std::string EncryptedMessage::getType() {
+std::string EncryptedMessage::getType() const {
     return "Encrypted";
 }
 
-// Override getContent
 std::string EncryptedMessage::getContent() const {
-    return decrypt(content);
-}
-
-// Simple Caesar cipher encrypt
-std::string EncryptedMessage::encrypt(std::string text) const {
-    std::string result = text;
-    for (char& c : result) {
-        if (isalpha(c)) {
-            char base = isupper(c) ? 'A' : 'a';
-            c = (c - base + shift) % 26 + base;
-        } else if (isdigit(c)) {
-            c = (c - '0' + shift) % 10 + '0';
-        }
-    }
-    return result;
-}
-
-// Decrypt
-std::string EncryptedMessage::decrypt(std::string text) const {
-    std::string result = text;
-    for (char& c : result) {
-        if (isalpha(c)) {
-            char base = isupper(c) ? 'A' : 'a';
-            c = (c - base - shift + 26) % 26 + base;
-        } else if (isdigit(c)) {
-            c = (c - '0' - shift + 10) % 10 + '0';
-        }
-    }
-    return result;
+    // Return decrypted content when asked (e.g. for searching)
+    return encryptionManager_.decrypt(content_, shift_);
 }

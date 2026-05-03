@@ -3,35 +3,37 @@
 
 #include "User.h"
 #include "PrivateChat.h"
-#include "EncryptionManager.h"
 #include <vector>
 #include <string>
-#include <fstream>
+#include <memory>
 
+/// @brief Handles persistent storage of users and chats.
+/// Refactored to use std::unique_ptr for memory safety and std::filesystem internally.
 class FileManager {
 private:
-    std::string usersFile = "data/users.txt";
-    std::string privateChatsDir = "data/private_chats/";
+    std::string usersFile_;
+    std::string privateChatsDir_;
+
+    // Helper to determine the concrete type of a polymorphic User object
+    std::string getUserType(const User* u) const;
 
 public:
     // Constructor
     FileManager();
 
     // Destructor
-    ~FileManager();
+    ~FileManager() = default;
 
-    // Methods
-    void saveUsers(const std::vector<User*>& users);
-    std::vector<User*> loadUsers();
+    // --- User Data ---
+    void saveUsers(const std::vector<std::unique_ptr<User>>& users) const;
+    std::vector<std::unique_ptr<User>> loadUsers() const;
 
-    void savePrivateChat(PrivateChat* chat);
-    PrivateChat* loadPrivateChat(std::string id); // FIX 3: No dummy users created
-    bool privateChatExists(std::string id);
-    void deletePrivateChatFile(std::string id);
-    std::vector<std::string> getAllChatIdsForUser(std::string username);
-
-    // Helper
-    std::string getUserType(User* u);
+    // --- Chat Data ---
+    void savePrivateChat(const PrivateChat* chat) const;
+    std::unique_ptr<PrivateChat> loadPrivateChat(const std::string& id) const;
+    bool privateChatExists(const std::string& id) const;
+    void deletePrivateChatFile(const std::string& id) const;
+    std::vector<std::string> getAllChatIdsForUser(const std::string& username) const;
 };
 
-#endif
+#endif // FILEMANAGER_H

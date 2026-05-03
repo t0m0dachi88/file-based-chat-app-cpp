@@ -2,22 +2,24 @@
 #define ADMIN_H
 
 #include "User.h"
+#include <string>
 
+/// @brief Admin class inheriting from User. Demonstrates inheritance and polymorphism.
 class Admin : public User {
 public:
     // Constructor
-    Admin(std::string u, std::string p);
+    Admin(const std::string& username, const std::string& password);
 
     // Destructor
-    ~Admin();
+    ~Admin() override;
 
     // Override virtual methods
-    void displayProfile() override;
-    bool canModerate() override;
+    void displayProfile() const override;
+    bool canModerate() const override;
 
     // Admin specific methods
-    void removeUserFromRoom(std::string username);
-    void muteUser(std::string username);
+    void removeUserFromRoom(const std::string& username) const;
+    void muteUser(const std::string& username) const;
 };
 
-#endif
+#endif // ADMIN_H

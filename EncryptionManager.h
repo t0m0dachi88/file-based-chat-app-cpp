@@ -3,20 +3,26 @@
 
 #include <string>
 
+/// @brief Utility class for handling string encryption and decryption.
+/// Uses a basic Caesar cipher for demonstration purposes.
 class EncryptionManager {
 private:
-    int defaultShift = 3;
+    static const int kDefaultShift = 3;
 
 public:
     // Constructor
-    EncryptionManager();
+    EncryptionManager() = default;
 
     // Destructor
-    ~EncryptionManager();
+    ~EncryptionManager() = default;
 
-    // Methods
-    std::string encrypt(std::string text, int shift = 3);
-    std::string decrypt(std::string text, int shift = 3);
+    // --- Core Operations ---
+    
+    /// @brief Encrypts a string using Caesar cipher.
+    std::string encrypt(const std::string& text, int shift = kDefaultShift) const;
+
+    /// @brief Decrypts a string using Caesar cipher.
+    std::string decrypt(const std::string& text, int shift = kDefaultShift) const;
 };
 
-#endif
+#endif // ENCRYPTIONMANAGER_H

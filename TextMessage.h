@@ -3,17 +3,18 @@
 
 #include "Message.h"
 
+/// @brief Represents a standard, unencrypted text message.
 class TextMessage : public Message {
 public:
     // Constructor
-    TextMessage(std::string s, std::string c);
+    TextMessage(const std::string& sender, const std::string& content);
 
     // Destructor
-    ~TextMessage();
+    ~TextMessage() override;
 
     // Override virtual methods
-    void display() override;
-    std::string getType() override;
+    void display() const override;
+    std::string getType() const override;
 };
 
-#endif
+#endif // TEXTMESSAGE_H

@@ -1,34 +1,30 @@
 #include "EncryptionManager.h"
+#include <cctype>
 
-// Constructor
-EncryptionManager::EncryptionManager() {}
-
-// Destructor
-EncryptionManager::~EncryptionManager() {}
-
-// Encrypt
-std::string EncryptionManager::encrypt(std::string text, int shift) {
+std::string EncryptionManager::encrypt(const std::string& text, int shift) const {
     std::string result = text;
     for (char& c : result) {
-        if (isalpha(c)) {
-            char base = isupper(c) ? 'A' : 'a';
-            c = (c - base + shift) % 26 + base;
-        } else if (isdigit(c)) {
-            c = (c - '0' + shift) % 10 + '0';
+        if (std::isalpha(c)) {
+            char base = std::isupper(c) ? 'A' : 'a';
+            // Safe modulo arithmetic for Caesar cipher
+            c = static_cast<char>((c - base + shift) % 26 + base);
+        } else if (std::isdigit(c)) {
+            c = static_cast<char>((c - '0' + shift) % 10 + '0');
         }
     }
     return result;
 }
 
-// Decrypt
-std::string EncryptionManager::decrypt(std::string text, int shift) {
+std::string EncryptionManager::decrypt(const std::string& text, int shift) const {
     std::string result = text;
     for (char& c : result) {
-        if (isalpha(c)) {
-            char base = isupper(c) ? 'A' : 'a';
-            c = (c - base - shift + 26) % 26 + base;
-        } else if (isdigit(c)) {
-            c = (c - '0' - shift + 10) % 10 + '0';
+        if (std::isalpha(c)) {
+            char base = std::isupper(c) ? 'A' : 'a';
+            // Added 26 to avoid negative modulo results
+            c = static_cast<char>((c - base - shift % 26 + 26) % 26 + base);
+        } else if (std::isdigit(c)) {
+            // Added 10 to avoid negative modulo results
+            c = static_cast<char>((c - '0' - shift % 10 + 10) % 10 + '0');
         }
     }
     return result;
