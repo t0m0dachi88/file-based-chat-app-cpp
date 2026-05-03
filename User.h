@@ -50,6 +50,7 @@ public:
     // Authentication
     bool login(const std::string& password);
     void logout();
+    void unlock() { loginAttempts_ = 0; } // Resets the lock counter
 
     // Block management
     void blockUser(const std::string& username);

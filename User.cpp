@@ -21,6 +21,7 @@ void User::setPassword(const std::string& password) {
         throw std::invalid_argument("Password cannot be empty.");
     }
     password_ = password;
+    loginAttempts_ = 0; // Reset attempts upon successful password reset
 }
 
 void User::setSecurityQuestion(const std::string& question) {
@@ -52,6 +53,7 @@ bool User::login(const std::string& password) {
     ++loginAttempts_;
     return false;
 }
+
 
 void User::logout() {
     isOnline_ = false;
