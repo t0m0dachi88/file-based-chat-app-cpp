@@ -4,7 +4,7 @@
 // --- Constructor ---
 // Note: We immediately encrypt the content for secure storage in memory
 EncryptedMessage::EncryptedMessage(const std::string& sender, const std::string& content, int shift) 
-    : Message(sender, ""), shift_(shift) { // Initialize base with empty content first
+    : Message(sender, content), shift_(shift) { 
     
     // Encrypt the incoming plaintext content and store it in base class field
     content_ = encryptionManager_.encrypt(content, shift_);
