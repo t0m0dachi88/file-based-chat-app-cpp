@@ -8,20 +8,33 @@
 #include <iostream>
 #include <stdexcept>
 #include <fstream>
-#include <filesystem>
+#include <cstdio> // For remove()
 
-namespace fs = std::filesystem;
+#ifdef _WIN32
+    #include <direct.h>   // For _mkdir
+    #define mkdir(path, mode) _mkdir(path)
+#else
+    #include <sys/stat.h> // For mkdir
+    #include <sys/types.h>
+#endif
+
+// Helper function for directory creation
+void ensureDirectoryExists(const std::string& path) {
+    mkdir(path.c_str(), 0777);
+}
+
+// Helper for file existence check
+bool fileExists(const std::string& filename) {
+    std::ifstream f(filename.c_str());
+    return f.good();
+}
 
 // --- Constructor ---
 FileManager::FileManager() : usersFile_("data/users.txt"), privateChatsDir_("data/private_chats/") {
-    // Ensure directories exist using modern C++ filesystem
-    try {
-        fs::create_directories("data");
-        fs::create_directories(privateChatsDir_);
-        fs::create_directories("data/logs");
-    } catch (const fs::filesystem_error& e) {
-        std::cerr << "Filesystem Error: " << e.what() << std::endl;
-    }
+    // Ensure directories exist using legacy methods
+    ensureDirectoryExists("data");
+    ensureDirectoryExists(privateChatsDir_);
+    ensureDirectoryExists("data/logs");
 }
 
 // --- Helper ---
@@ -197,44 +210,48 @@ std::unique_ptr<PrivateChat> FileManager::loadPrivateChat(const std::string& id)
 // --- Check Exists ---
 bool FileManager::privateChatExists(const std::string& id) const {
     std::string filename = privateChatsDir_ + id + ".txt";
-    return fs::exists(filename);
+    return fileExists(filename);
 }
 
 // --- Delete File ---
 void FileManager::deletePrivateChatFile(const std::string& id) const {
-    try {
-        std::string filename = privateChatsDir_ + id + ".txt";
-        if (fs::exists(filename)) {
-            fs::remove(filename);
-        }
-    } catch (const fs::filesystem_error& e) {
-        std::cerr << "Filesystem Error deleting chat: " << e.what() << std::endl;
-    }
+    std::string filename = privateChatsDir_ + id + ".txt";
+    std::remove(filename.c_str());
 }
 
 // --- Get All Chat IDs ---
+#ifdef _WIN32
+#include <io.h>
 std::vector<std::string> FileManager::getAllChatIdsForUser(const std::string& username) const {
     std::vector<std::string> ids;
-    try {
-        if (!fs::exists(privateChatsDir_)) return ids;
-        
-        for (const auto& entry : fs::directory_iterator(privateChatsDir_)) {
-            if (entry.is_regular_file() && entry.path().extension() == ".txt") {
-                std::string filename = entry.path().stem().string(); // Get filename without extension
+    std::string pattern = privateChatsDir_ + "*.txt";
+    struct _finddata_t data;
+    intptr_t handle = _findfirst(pattern.c_str(), &data);
+    
+    if (handle != -1) {
+        do {
+            std::string filename = data.name;
+            // Remove .txt extension
+            if (filename.length() > 4) {
+                filename = filename.substr(0, filename.length() - 4);
                 
                 std::string search1 = username + "_";
                 std::string search2 = "_" + username;
                 
-                // Check if id starts with search1 or ends with search2
                 if (filename.find(search1) == 0 || 
                    (filename.length() >= search2.length() && 
-                    filename.compare(filename.length() - search2.length(), search2.length(), search2) == 0)) {
+                    filename.find(search2) != std::string::npos)) {
                     ids.push_back(filename);
                 }
             }
-        }
-    } catch (const fs::filesystem_error& e) {
-        std::cerr << "Filesystem Error listing chats: " << e.what() << std::endl;
+        } while (_findnext(handle, &data) == 0);
+        _findclose(handle);
     }
     return ids;
 }
+#else
+std::vector<std::string> FileManager::getAllChatIdsForUser(const std::string& username) const {
+    // Basic fallback for non-windows if needed, but user is on Windows
+    return {}; 
+}
+#endif

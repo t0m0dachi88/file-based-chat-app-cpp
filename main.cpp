@@ -21,9 +21,23 @@
 #include <thread>
 #include <chrono>
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
 using namespace std;
 
 // --- Utility Functions ---
+
+void appSleep(int ms) {
+#ifdef _WIN32
+    Sleep(ms);
+#else
+    usleep(ms * 1000);
+#endif
+}
 
 void clearInput() {
     cin.clear();
@@ -53,12 +67,12 @@ void printMenu(const vector<string>& options) {
 
 void printSuccess(const string& msg) {
     cout << "\033[1;32m" << msg << "\033[0m" << endl;
-    this_thread::sleep_for(chrono::milliseconds(1500));
+    appSleep(1500);
 }
 
 void printError(const string& msg) {
     cout << "\033[1;31m" << msg << "\033[0m" << endl;
-    this_thread::sleep_for(chrono::milliseconds(1500));
+    appSleep(1500);
 }
 
 void loadingAnimation() {
@@ -66,7 +80,7 @@ void loadingAnimation() {
     for (int i = 0; i < 3; ++i) {
         cout << ".";
         cout.flush();
-        this_thread::sleep_for(chrono::milliseconds(200));
+        appSleep(200);
     }
     cout << "\033[0m\n" << endl;
 }
