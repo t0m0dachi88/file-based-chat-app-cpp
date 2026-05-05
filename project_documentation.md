@@ -36,7 +36,7 @@ The `main.cpp` acts as the system controller. When a user sends a message, a `Pr
 
 ### `Admin` & `Member` (Derived Classes)
 *   **Purpose:** Implements specific role behaviors.
-*   **Attributes:** Inherits from `User`.
+*   **Attributes:** Inherits from `User`.irfan
 *   **Methods:** `Admin` includes `removeUserFromRoom()` and `muteUser()`. `Member` includes `changePassword()`.
 *   **Design Decisions:** Separating these classes enforces strict Role-Based Access Control (RBAC) utilizing runtime polymorphism.
 
@@ -79,7 +79,7 @@ The `main.cpp` acts as the system controller. When a user sends a message, a `Pr
 ### Private Chat
 *   **Message Sending:** Users instantiate an `EncryptedMessage`. The system captures the current timestamp, pushes the message pointer to the `PrivateChat::messages` vector, and flushes the entire chat to a specific file.
 *   **Chat Retrieval:** Chat files are loaded lazily. If a chat file exists for "UserA_UserB", it is deserialized into a `PrivateChat` object and placed in the active memory map.
-
+irfan
 ### File Handling
 *   **User Storage:** Stored in `data/users.txt`.
 *   **Chat Storage:** Stored in `data/private_chats/<chat_id>.txt`.
@@ -110,7 +110,7 @@ The `main.cpp` acts as the system controller. When a user sends a message, a `Pr
 *   **`std::set`:** Used in `User` to track `blockedUsers`. Sets inherently prevent duplicates and offer O(log n) lookup times for checking block status.
 *   **`<algorithm>`:** Utilized functions like `std::find_if` and `std::swap` to sort usernames for chat IDs and rapidly search user lists, reducing boilerplate loop code.
 
----
+---irfan
 
 ## 🔐 7. Advanced Features
 
